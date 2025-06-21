@@ -1,0 +1,10 @@
+train:
+  epochs: 50
+  batch_size: 8
+  lr: 0.001
+  device: cuda
+
+data:
+  root: /content/drive/MyDrive/semantic segmentation/
+  img_size: 512
+  augmentations: true
