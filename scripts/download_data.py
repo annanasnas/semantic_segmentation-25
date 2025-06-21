@@ -16,6 +16,6 @@ def main(dest: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dest", default="content")
+    parser.add_argument("--dest", default="data")
     args = parser.parse_args()
     main(args.dest)
