@@ -16,12 +16,11 @@ def main(dest: str) -> None:
     with zipfile.ZipFile(zip_path) as zf: zf.extractall(dest)
     zip_path.unlink()
 
-    ckpt_path = dest / "deeplabv2_cityscapes.pt"
-    if not ckpt_path.exists():
-        gdrive(WEIGHTS_ID, ckpt_path)
+    weights_path = "models/deeplabv2/deeplabv2_cityscapes.pt"
+    if not weights_path.exists():
+        gdrive(WEIGHTS_ID, weights_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dest", default="datasets/data")
     args = parser.parse_args()
     main(args.dest)
