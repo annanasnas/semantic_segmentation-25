@@ -2,7 +2,7 @@ from tqdm import tqdm
 import torch
 import pandas as pd
 import numpy as np
-from scripts.utils import fast_hist, per_class_iou, visualize_result
+from scripts.utils import fast_hist, per_class_iou, visualize_result, denormalize
 from pathlib import Path
 import matplotlib.pyplot as plt
 from IPython.display import clear_output, display
@@ -21,14 +21,11 @@ CITYSCAPES_PALETTE = [
     [  0, 60,100], [  0, 80,100], [  0,  0,230], [119, 11, 32]
 ]
 
-metrics = {"epoch": [], "train_loss": [], "val_miou": []}
-
-
 def train_model(model, train_dataloader, val_dataloader,
                 device, epochs, autocast, scaler,
                 optimizer, criterion, scheduler, 
                 ckpt, start_epoch, best_miou,
-                log_csv, plot_png):
+                log_csv, plot_png, metrics):
     
 
     log_csv = Path(log_csv)
@@ -78,8 +75,8 @@ def train_model(model, train_dataloader, val_dataloader,
             print(f"{cls_name:16s}: {iou:.4f}")
         print(f"Mean IoU: {np.nanmean(ious):.4f}")
 
-        sample_img = denormalize(images[0].cpu())
-        visualize_result(sample_img, targets[0], preds[0], CITYSCAPES_PALETTE)
+        # sample_img = denormalize(images[0].cpu())
+        # visualize_result(sample_img, targets[0], preds[0], CITYSCAPES_PALETTE)
 
         if miou > best_miou:
           snapshot = {
@@ -93,10 +90,17 @@ def train_model(model, train_dataloader, val_dataloader,
           model.to(device)
           ckpt.save_best(miou, snapshot)
 
-        metrics["epoch"].append(epoch+1)
-        metrics["train_loss"].append(train_loss)
-        metrics["val_miou"].append(miou)
-        pd.DataFrame(metrics).to_csv(log_csv, index=False)
+        new_row = {
+            "epoch":      epoch + 1,
+            "train_loss": train_loss,
+            "val_miou":   miou,
+        }
+        metrics["epoch"].append(new_row["epoch"])
+        metrics["train_loss"].append(new_row["train_loss"])
+        metrics["val_miou"].append(new_row["val_miou"])
+        pd.DataFrame([new_row]).to_csv(
+            log_csv, mode="a", index=False, header=not log_csv.exists()
+        )
 
         clear_output(wait=True)
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
