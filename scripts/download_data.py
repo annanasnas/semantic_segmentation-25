@@ -1,6 +1,6 @@
 import pathlib, zipfile, gdown
 
-CITYSCAPES_ID = "1OlElYRhKovWEc8gu32E8at-xNfEQniGq"
+CITYSCAPES_ID = "11z3KcEeIQU3x8mGratr8SHpv5IzTBVaW" #"1OlElYRhKovWEc8gu32E8at-xNfEQniGq"
 WEIGHTS_ID = "1VOmwEwd73ktbCaSlugCPRGEwq9QY85aW"
 
 def gdrive(id_: str, out_path: pathlib.Path):
