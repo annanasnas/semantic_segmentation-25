@@ -16,10 +16,10 @@ class Checkpoint:
     def save_best(self, metric: float, payload: dict) -> None:
         if metric > self.best:
             self.best = metric
-            self._atomic_save(payload, self.dir / "best.pt")
+            self._atomic_save(payload, self.dir / "best.pth")
             print(f"New best mIoU = {metric:.4f}")
 
     def save_final(self, payload: dict, epoch: int) -> None:
-        name = f"final_e{epoch}.pt"
+        name = f"final_e{epoch}.pth"
         self._atomic_save(payload, self.dir / name)
         print(f"Final checkpoint saved {name}")

@@ -63,7 +63,7 @@ def train_model(model, train_dataloader, val_dataloader,
                 images, masks = images.to(device), masks.to(device, dtype=torch.long)
 
                 with autocast(device_type='cuda'):
-                    outputs, _, _ = model(images)
+                    outputs = model(images)
 
                 preds = torch.argmax(outputs, dim=1).cpu().numpy()
                 targets = masks.cpu().numpy()

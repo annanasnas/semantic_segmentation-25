@@ -1,6 +1,7 @@
 import numpy as np
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
+import torch
 
 
 def poly_lr_scheduler(optimizer, init_lr, iter, lr_decay_iter=1,
