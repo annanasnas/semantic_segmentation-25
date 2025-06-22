@@ -74,7 +74,7 @@ class ResNetMulti(nn.Module):
         for i in self.bn1.parameters():
             i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
@@ -86,6 +86,8 @@ class ResNetMulti(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+
+        self.multi_level = False
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1):
         downsample = None
@@ -121,7 +123,7 @@ class ResNetMulti(nn.Module):
         x = self.layer4(x)
         x = self.layer6(x)
 
-        x = torch.nn.functional.interpolate(x, size=(H, W), mode='bilinear')
+        x = torch.nn.functional.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
 
         if self.training == True:
             return x, None, None

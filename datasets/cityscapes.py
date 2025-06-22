@@ -8,7 +8,7 @@ import numpy as np
 
 
 class CityScapes(Dataset):
-    def __init__(self, root_dir, split='train', image_transform=None):
+    def __init__(self, root_dir, split='train', image_transform=None, image_size=512):
         super(CityScapes, self).__init__()
 
         self.root_dir = root_dir
@@ -21,6 +21,7 @@ class CityScapes(Dataset):
         
         self.split = split
         self.image_transform = image_transform
+        self.image_size = image_size
 
         assert len(self.image_paths) == len(self.label_paths), "Mismatch between image and label counts"
 
@@ -34,8 +35,8 @@ class CityScapes(Dataset):
         image = Image.open(img_path).convert("RGB")
         label = Image.open(label_path)
 
-        image = transforms.Resize((512, 1024))(image)
-        label = transforms.Resize((512, 1024), interpolation=Image.NEAREST)(label)
+        image = transforms.Resize((self.image_size, self.image_size*2))(image)
+        label = transforms.Resize((self.image_size, self.image_size*2), interpolation=Image.NEAREST)(label)
         label = torch.as_tensor(np.array(label), dtype=torch.long)
 
         image = self.image_transform(image)
