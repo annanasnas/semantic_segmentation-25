@@ -4,5 +4,5 @@ train:
   lr: 0.001
 
 data:
-  root: /content/semantic_segmentation-25/datasets/data/
+  root: /content/semantic_segmentation-25/datasets/data/Cityscapes/Cityspaces
   img_size: 512
