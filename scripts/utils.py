@@ -67,3 +67,4 @@ def visualize_result(sample_image, sample_mask, sample_pred, CITYSCAPES_PALETTE)
         ax.axis('off')
     plt.tight_layout()
     plt.show()
+
