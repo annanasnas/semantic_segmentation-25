@@ -5,7 +5,7 @@ import numpy as np
 from scripts.utils import fast_hist, per_class_iou, visualize_result, denormalize
 from pathlib import Path
 import matplotlib.pyplot as plt
-from IPython.display import clear_output, display
+from IPython.display import display
 
 
 CITYSCAPES_CLASSES = [
@@ -21,6 +21,7 @@ CITYSCAPES_PALETTE = [
     [  0, 60,100], [  0, 80,100], [  0,  0,230], [119, 11, 32]
 ]
 
+
 def train_model(model, train_dataloader, val_dataloader,
                 device, epochs, autocast, scaler,
                 optimizer, criterion, scheduler, 
@@ -29,6 +30,14 @@ def train_model(model, train_dataloader, val_dataloader,
     
 
     log_csv = Path(log_csv)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    line_train, = ax1.plot([], [], label="train_loss")
+    ax1.set_xlabel("epoch"); ax1.set_ylabel("loss"); ax1.grid(); ax1.legend()
+    line_miou,  = ax2.plot([], [], color="green")
+    ax2.set_xlabel("epoch"); ax2.set_ylabel("mIoU"); ax2.grid()
+    fig.suptitle("Training progress"); fig.tight_layout()
+    plot_handle = display(fig, display_id="loss_miou")
 
     for epoch in range(start_epoch, epochs):
 
@@ -51,6 +60,7 @@ def train_model(model, train_dataloader, val_dataloader,
 
         train_loss = running_loss / len(train_dataloader)
         scheduler.step()
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {train_loss:.4f}")
 
         model.eval()
         hist = np.zeros((19, 19))
@@ -74,7 +84,7 @@ def train_model(model, train_dataloader, val_dataloader,
         for idx, (cls_name, iou) in enumerate(zip(CITYSCAPES_CLASSES, ious)):
             print(f"{cls_name:16s}: {iou:.4f}")
         print(f"Mean IoU: {np.nanmean(ious):.4f}")
-
+  
         # sample_img = denormalize(images[0].cpu())
         # visualize_result(sample_img, targets[0], preds[0], CITYSCAPES_PALETTE)
 
@@ -102,17 +112,14 @@ def train_model(model, train_dataloader, val_dataloader,
             log_csv, mode="a", index=False, header=not log_csv.exists()
         )
 
-        clear_output(wait=True)
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+        line_train.set_data(metrics["epoch"], metrics["train_loss"])
+        line_miou.set_data(metrics["epoch"], metrics["val_miou"])
 
-        ax1.plot(metrics["epoch"], metrics["train_loss"], label="train_loss")
-        ax1.set_xlabel("epoch"); ax1.set_ylabel("loss"); ax1.grid(); ax1.legend()
+        for ax in (ax1, ax2):
+            ax.relim()
+            ax.autoscale_view()
 
-        ax2.plot(metrics["epoch"], metrics["val_miou"], color="green")
-        ax2.set_xlabel("epoch"); ax2.set_ylabel("mIoU"); ax2.grid()
-
-        fig.suptitle("Training progress"); fig.tight_layout()
-        display(fig); plt.close(fig)
+        plot_handle.update(fig)
 
     ckpt.save_final(snapshot, epochs)
 
