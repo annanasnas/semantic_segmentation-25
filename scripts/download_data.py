@@ -16,7 +16,7 @@ def main():
         zf.extractall(zip_path.parent)
     zip_path.unlink()
 
-    weights_path = pathlib.Path("models/deeplabv2/DeepLab_resnet_pretrained_imagenet.pt")
+    weights_path = pathlib.Path("models/deeplabv2/DeepLab_resnet_pretrained_imagenet.pth")
     if not weights_path.exists():
         gdrive(WEIGHTS_ID, weights_path)
 
