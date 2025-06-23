@@ -2,7 +2,7 @@ from tqdm import tqdm
 import torch
 import pandas as pd
 import numpy as np
-from scripts.utils import fast_hist, per_class_iou, visualize_result, denormalize
+from scripts.utils import fast_hist, per_class_iou, denormalize
 from pathlib import Path
 import matplotlib.pyplot as plt
 from IPython.display import display

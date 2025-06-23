@@ -59,7 +59,7 @@ def evaluate_miou(model, dataloader, device):
 
 @torch.no_grad()
 def latency_FPS(model, device, h, w):
-    image = torch.randn(8, 3, h, w).to(device)
+    image = torch.randn(1, 3, h, w).to(device)
     iterations = 1000
     latency = []
     FPS = []
@@ -84,7 +84,7 @@ def latency_FPS(model, device, h, w):
     return mean_latency, std_latency, mean_FPS, std_FPS
 
 
-def create_final_table(model, model_name, device="cuda", in_res, epochs):
+def create_final_table(model, model_name, device, in_res, epochs):
     h, w = in_res
     model = model.to(device)
 
@@ -94,7 +94,7 @@ def create_final_table(model, model_name, device="cuda", in_res, epochs):
 
     df = pd.DataFrame(
         [[f"{model_name} - {epochs} epochs",
-          f"{Mean latency: {latency_mean:.2f} +/- {latency_std:.2f}, Mean FPS: {fps_mean:.2f} +/- {fps_std:.2f} frames per second",
+          f"Mean latency: {latency_mean:.2f} +/- {latency_std:.2f}, Mean FPS: {fps_mean:.2f} +/- {fps_std:.2f} frames per second",
           f"{flops:.1f} G",
           f"{params_m:.1f} M"]],
         columns=["Model", "Latency", "FLOPs", "Params"]
