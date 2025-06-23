@@ -19,6 +19,5 @@ class Checkpoint:
             self._atomic_save(payload, self.dir / "best.pth")
             print(f"Best mIoU = {metric:.4f}")
 
-    def save_final(self, payload, epoch):
-        name = self.dir / f"final_e{epoch}.pth"
-        self._atomic_save(payload, name)
+    def save_last(self, payload):
+        self._atomic_save(payload, self.dir / "last.pth")

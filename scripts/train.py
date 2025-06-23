@@ -26,7 +26,7 @@ def train_model(model, train_dataloader, val_dataloader,
                 device, epochs, autocast, scaler,
                 optimizer, criterion, scheduler, 
                 ckpt, start_epoch, best_miou,
-                log_csv, plot_png, metrics):
+                log_csv, metrics):
     
 
     log_csv = Path(log_csv)
@@ -34,7 +34,7 @@ def train_model(model, train_dataloader, val_dataloader,
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     line_train, = ax1.plot([], [], label="train_loss")
     ax1.set_xlabel("epoch"); ax1.set_ylabel("loss"); ax1.grid(); ax1.legend()
-    line_miou,  = ax2.plot([], [], color="green")
+    line_miou,  = ax2.plot([], [], color="green", label="val_miou")
     ax2.set_xlabel("epoch"); ax2.set_ylabel("mIoU"); ax2.grid()
     fig.suptitle("Training progress"); fig.tight_layout()
     plot_handle = display(fig, display_id="loss_miou")
@@ -84,12 +84,8 @@ def train_model(model, train_dataloader, val_dataloader,
         for idx, (cls_name, iou) in enumerate(zip(CITYSCAPES_CLASSES, ious)):
             print(f"{cls_name:16s}: {iou:.4f}")
         print(f"Mean IoU: {np.nanmean(ious):.4f}")
-  
-        # sample_img = denormalize(images[0].cpu())
-        # visualize_result(sample_img, targets[0], preds[0], CITYSCAPES_PALETTE)
 
-        if miou > best_miou:
-          snapshot = {
+        snapshot = {
               "epoch":      epoch + 1,
               "model":      model.cpu().state_dict(),
               "optimizer":  optimizer.state_dict(),
@@ -97,8 +93,12 @@ def train_model(model, train_dataloader, val_dataloader,
               "scheduler":  scheduler.state_dict(),
               "best_miou":  ckpt.best,
           }
-          model.to(device)
-          ckpt.save_best(miou, snapshot)
+        ckpt.save_last(snapshot)
+        model.to(device)
+
+        if miou > best_miou:
+            best_miou = miou
+            ckpt.save_best(miou, snapshot)
 
         new_row = {
             "epoch":      epoch + 1,
