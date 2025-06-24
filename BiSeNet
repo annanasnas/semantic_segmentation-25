@@ -99,7 +99,7 @@
       "source": [
         "import yaml\n",
         "\n",
-        "with open(\"configs/deeplabv2.yaml\", \"r\", encoding=\"utf-8\") as f:\n",
+        "with open(\"configs/bisenet.yaml\", \"r\", encoding=\"utf-8\") as f:\n",
         "    cfg = yaml.safe_load(f)\n",
         "\n",
         "!python scripts/download_data.py\n",
@@ -113,31 +113,10 @@
         "name = cfg[\"model\"][\"name\"]"
       ],
       "metadata": {
-        "id": "Eg08IBbau_S3",
-        "outputId": "8ca0710d-8e5f-45ca-b306-2806d44b53ca",
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        }
+        "id": "Eg08IBbau_S3"
       },
-      "execution_count": 3,
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Downloading...\n",
-            "From (original): https://drive.google.com/uc?id=1OlElYRhKovWEc8gu32E8at-xNfEQniGq\n",
-            "From (redirected): https://drive.google.com/uc?id=1OlElYRhKovWEc8gu32E8at-xNfEQniGq&confirm=t&uuid=9c44b0d5-9bad-46f6-993f-93aa09a3754d\n",
-            "To: /content/semantic_segmentation-25/datasets/data/Cityscapes.zip\n",
-            "100% 4.97G/4.97G [02:06<00:00, 39.5MB/s]\n",
-            "Downloading...\n",
-            "From (original): https://drive.google.com/uc?id=1VOmwEwd73ktbCaSlugCPRGEwq9QY85aW\n",
-            "From (redirected): https://drive.google.com/uc?id=1VOmwEwd73ktbCaSlugCPRGEwq9QY85aW&confirm=t&uuid=d848e162-caf1-4ebd-9327-c8440838d93d\n",
-            "To: /content/semantic_segmentation-25/models/deeplabv2/DeepLab_resnet_pretrained_imagenet.pth\n",
-            "100% 177M/177M [00:02<00:00, 62.7MB/s]\n"
-          ]
-        }
-      ]
+      "execution_count": 4,
+      "outputs": []
     },
     {
       "cell_type": "markdown",
@@ -184,7 +163,7 @@
       "metadata": {
         "id": "HG4PBKBLtG6S"
       },
-      "execution_count": 4,
+      "execution_count": 5,
       "outputs": []
     },
     {
@@ -225,17 +204,16 @@
       "source": [
         "import torch.optim as optim\n",
         "import torch.nn as nn\n",
-        "from models.deeplabv2.deeplabv2 import get_deeplab_v2\n",
+        "from models.bisenet.build_bisenet import BiSeNet\n",
         "from scripts.train import train_model\n",
         "from torch.amp import autocast, GradScaler\n",
         "from scripts.checkpoint import Checkpoint\n",
         "from pathlib import Path\n",
         "import pandas as pd\n",
         "\n",
-        "model = get_deeplab_v2()\n",
+        "model = BiSeNet(num_classes=19, context_path='resnet18')\n",
         "optimizer = optim.SGD(model.optim_parameters(lr=learning_rate), momentum=0.9, weight_decay=5e-4)\n",
         "criterion = nn.CrossEntropyLoss(ignore_index=255)\n",
-        "scheduler = optim.lr_scheduler.PolynomialLR(optimizer, total_iters=50, power=0.9)\n",
         "scaler = GradScaler()\n",
         "\n",
         "model.to(device)\n",
@@ -251,19 +229,22 @@
         "    model.load_state_dict(ckpt[\"model\"])\n",
         "    optimizer.load_state_dict(ckpt[\"optimizer\"])\n",
         "    scaler.load_state_dict(ckpt[\"scaler\"])\n",
-        "    scheduler.load_state_dict(ckpt[\"scheduler\"])\n",
         "    start_epoch = ckpt[\"epoch\"]\n",
+        "    iteration = ckpt[\"iteration\"]\n",
         "    best_miou   = ckpt[\"best_miou\"]\n",
         "    df_prev = pd.read_csv(log_csv)\n",
         "    metrics = df_prev.to_dict(\"list\")\n",
         "else:\n",
         "    start_epoch = 0\n",
         "    best_miou   = 0\n",
+        "    iteration = 0\n",
         "    metrics = {\"epoch\": [], \"train_loss\": [], \"val_loss\": [], \"val_miou\": []}\n",
         "\n",
+        "max_iter = len(train_dataloader) * epochs\n",
         "train_model(model, train_dataloader, val_dataloader,\n",
         "            device, epochs, autocast, scaler,\n",
-        "            optimizer, criterion, scheduler,\n",
+        "            optimizer, criterion, learning_rate,\n",
+        "            iteration, max_iter,\n",
         "            ckpt_mgr, start_epoch, best_miou,\n",
         "            log_csv, metrics)"
       ],
@@ -290,7 +271,7 @@
         "\n",
         "logging.getLogger(\"fvcore.nn.jit_analysis\").setLevel(logging.ERROR)\n",
         "\n",
-        "model = get_deeplab_v2()\n",
+        "model = BiSeNet(num_classes=19, context_path='resnet18')\n",
         "df = create_final_table(model, name, device, (img_size, img_size*2), epochs)\n",
         "\n",
         "best_model = torch.load(best_path, map_location=device)\n",
@@ -299,21 +280,21 @@
         "print(df.to_markdown(index=False))"
       ],
       "metadata": {
-        "id": "b9wTERUkcA-n",
-        "outputId": "3bf7a540-aed7-4ff2-df90-9a865ceb1e83",
         "colab": {
           "base_uri": "https://localhost:8080/"
-        }
+        },
+        "id": "b9wTERUkcA-n",
+        "outputId": "8ed63d16-88d4-4fcf-f911-3b81b5c14439"
       },
-      "execution_count": 21,
+      "execution_count": 8,
       "outputs": [
         {
           "output_type": "stream",
           "name": "stdout",
           "text": [
-            "| Model                 | Latency                                                                | FLOPs   | Params   |   mIoU (%) |\n",
-            "|:----------------------|:-----------------------------------------------------------------------|:--------|:---------|-----------:|\n",
-            "| deeplabv2 - 50 epochs | Mean latency: 0.24 +/- 0.03, Mean FPS: 4.24 +/- 2.37 frames per second | 376.1 G | 43.9 M   |    59.7789 |\n"
+            "| Model               | Latency                                                                  | FLOPs   | Params   |   mIoU (%) |\n",
+            "|:--------------------|:-------------------------------------------------------------------------|:--------|:---------|-----------:|\n",
+            "| bisenet - 50 epochs | Mean latency: 0.02 +/- 0.01, Mean FPS: 68.38 +/- 13.14 frames per second | 25.8 G  | 12.6 M   |    54.3385 |\n"
           ]
         }
       ]

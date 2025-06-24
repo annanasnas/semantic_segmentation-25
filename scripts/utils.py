@@ -59,6 +59,7 @@ def evaluate_miou(model, dataloader, device):
 
 @torch.no_grad()
 def latency_FPS(model, device, h, w):
+    model.eval().to(device) 
     image = torch.randn(1, 3, h, w).to(device)
     iterations = 1000
     latency = []

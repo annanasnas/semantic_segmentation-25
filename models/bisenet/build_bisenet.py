@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from .build_contextpath import build_contextpath
 import warnings
+from itertools import chain
 warnings.filterwarnings(action='ignore')
 
 
@@ -168,3 +169,9 @@ class BiSeNet(torch.nn.Module):
             return result, cx1_sup, cx2_sup
 
         return result
+
+    def optim_parameters(self, lr): # new
+      return [
+          {'params': self.context_path.parameters(), 'lr': lr},               # 1x
+          {'params': chain(*(m.parameters() for m in self.mul_lr)), 'lr': lr * 10}  # 10x
+      ]

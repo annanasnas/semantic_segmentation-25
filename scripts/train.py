@@ -2,7 +2,7 @@ from tqdm import tqdm
 import torch
 import pandas as pd
 import numpy as np
-from scripts.utils import fast_hist, per_class_iou, denormalize
+from scripts.utils import fast_hist, per_class_iou, denormalize, poly_lr_scheduler
 from pathlib import Path
 import matplotlib.pyplot as plt
 from IPython.display import display
@@ -24,7 +24,8 @@ CITYSCAPES_PALETTE = [
 
 def train_model(model, train_dataloader, val_dataloader,
                 device, epochs, autocast, scaler,
-                optimizer, criterion, scheduler, 
+                optimizer, criterion, learning_rate,
+                iteration, max_iter,
                 ckpt, start_epoch, best_miou,
                 log_csv, metrics):
     
@@ -58,8 +59,10 @@ def train_model(model, train_dataloader, val_dataloader,
 
             running_loss += loss.item()
 
+            poly_lr_scheduler(optimizer, learning_rate, iteration, max_iter=max_iter)
+            iteration += 1
+
         train_loss = running_loss / len(train_dataloader)
-        scheduler.step()
         print(f"Epoch {epoch+1}/{epochs}, Loss: {train_loss:.4f}")
 
         model.eval()
@@ -85,21 +88,6 @@ def train_model(model, train_dataloader, val_dataloader,
             print(f"{cls_name:16s}: {iou:.4f}")
         print(f"Mean IoU: {np.nanmean(ious):.4f}")
 
-        snapshot = {
-              "epoch":      epoch + 1,
-              "model":      model.cpu().state_dict(),
-              "optimizer":  optimizer.state_dict(),
-              "scaler":     scaler.state_dict(),
-              "scheduler":  scheduler.state_dict(),
-              "best_miou":  ckpt.best,
-          }
-        ckpt.save_last(snapshot)
-        model.to(device)
-
-        if miou > best_miou:
-            best_miou = miou
-            ckpt.save_best(miou, snapshot)
-
         new_row = {
             "epoch":      epoch + 1,
             "train_loss": train_loss,
@@ -120,6 +108,21 @@ def train_model(model, train_dataloader, val_dataloader,
             ax.autoscale_view()
 
         plot_handle.update(fig)
+
+        snapshot = {
+              "epoch":      epoch + 1,
+              "model":      model.cpu().state_dict(),
+              "optimizer":  optimizer.state_dict(),
+              "scaler":     scaler.state_dict(),
+              "iteration":  iteration,
+              "best_miou":  best_miou
+          }
+        ckpt.save_last(snapshot)
+        model.to(device)
+
+        if miou > best_miou:
+            best_miou = miou
+            ckpt.save_best(miou, snapshot)
 
     ckpt.save_final(snapshot, epochs)
 
