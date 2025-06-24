@@ -5,6 +5,7 @@ import torch
 from fvcore.nn import FlopCountAnalysis, flop_count_table
 import time
 import pandas as pd
+from pathlib import Path
 
 
 def poly_lr_scheduler(optimizer, init_lr, iter, lr_decay_iter=1,
@@ -115,4 +116,24 @@ def denormalize(image):
     std = torch.tensor([0.229, 0.224, 0.225]).reshape(3, 1, 1)
     return image * std + mean
 
+
+def plot_log(csv_path):
+    df = pd.read_csv(csv_path).sort_values("epoch")
+
+    fig, ax1 = plt.subplots(figsize=(8, 4))
+    ax1.plot(df["epoch"], df["train_loss"], label="train loss", c="tab:blue")
+    ax1.set_xlabel("epoch"); ax1.set_ylabel("loss", color="tab:blue")
+    ax1.tick_params(axis="y", colors="tab:blue")
+    ax1.grid(alpha=.3)
+
+    ax2 = ax1.twinx()
+    ax2.plot(df["epoch"], df["val_miou"], label="val mIoU", c="tab:green")
+    ax2.set_ylabel("mIoU", color="tab:green")
+    ax2.tick_params(axis="y", colors="tab:green")
+
+    ax1.legend(loc="upper right")
+    plt.tight_layout()
+
+    plt.show()
+    plt.close(fig)
 
