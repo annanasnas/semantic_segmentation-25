@@ -1,7 +1,8 @@
 import pathlib, zipfile, gdown
 
 CITYSCAPES_ID = "1OlElYRhKovWEc8gu32E8at-xNfEQniGq"
-WEIGHTS_ID = "1VOmwEwd73ktbCaSlugCPRGEwq9QY85aW"
+GTA5_ID       = "18HzmiU3yDDvC2-BgNFVHuay5-H_8xUSV"
+WEIGHTS_ID    = "1VOmwEwd73ktbCaSlugCPRGEwq9QY85aW"
 
 def gdrive(id_: str, out_path: pathlib.Path):
     url = f"https://drive.google.com/uc?id={id_}"
@@ -11,6 +12,12 @@ def gdrive(id_: str, out_path: pathlib.Path):
 def main():
     
     zip_path = pathlib.Path("datasets/data/Cityscapes.zip")
+    gdrive(CITYSCAPES_ID, zip_path)
+    with zipfile.ZipFile(zip_path) as zf:
+        zf.extractall(zip_path.parent)
+    zip_path.unlink()
+
+    zip_path = pathlib.Path("datasets/data/GTA5.zip")
     gdrive(CITYSCAPES_ID, zip_path)
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(zip_path.parent)

@@ -55,7 +55,8 @@ def evaluate_miou(model, dataloader, device):
         targs = masks.cpu().numpy(); targs[targs == 255] = -1
         for lt, lp in zip(targs, preds):
             hist += fast_hist(lt.flatten(), lp.flatten(), 19)
-    return float(np.nanmean(per_class_iou(hist)))
+    ious = per_class_iou(hist)
+    return ious
 
 
 @torch.no_grad()
@@ -120,20 +121,54 @@ def denormalize(image):
 def plot_log(csv_path):
     df = pd.read_csv(csv_path).sort_values("epoch")
 
-    fig, ax1 = plt.subplots(figsize=(8, 4))
-    ax1.plot(df["epoch"], df["train_loss"], label="train loss", c="tab:blue")
-    ax1.set_xlabel("epoch"); ax1.set_ylabel("loss", color="tab:blue")
-    ax1.tick_params(axis="y", colors="tab:blue")
-    ax1.grid(alpha=.3)
+    fig, (ax_loss, ax_miou) = plt.subplots(
+        nrows=2, ncols=1, figsize=(8, 8), sharex=True
+    )
 
-    ax2 = ax1.twinx()
-    ax2.plot(df["epoch"], df["val_miou"], label="val mIoU", c="tab:green")
-    ax2.set_ylabel("mIoU", color="tab:green")
-    ax2.tick_params(axis="y", colors="tab:green")
+    ax_loss.plot(df["epoch"], df["train_loss"], color="tab:blue", label="train loss")
+    ax_loss.set_ylabel("Loss")
+    ax_loss.set_title("Training Loss")
+    ax_loss.grid(alpha=0.3)
+    ax_loss.legend(frameon=False)
 
-    ax1.legend(loc="upper right")
-    plt.tight_layout()
+    ax_miou.plot(df["epoch"], df["val_miou"], color="tab:green", label="val mIoU")
+    ax_miou.set_xlabel("Epoch")
+    ax_miou.set_ylabel("mIoU")
+    ax_miou.set_title("Validation mIoU")
+    ax_miou.grid(alpha=0.3)
+    ax_miou.legend(frameon=False)
 
+    fig.tight_layout()
     plt.show()
-    plt.close(fig)
+
+def visualize_sample(val_dataloader, model):
+
+    CITYSCAPES_PALETTE = [
+        [128, 64,128], [244, 35,232], [ 70, 70, 70], [102,102,156], [190,153,153],
+        [153,153,153], [250,170, 30], [220,220,  0], [107,142, 35], [152,251,152],
+        [ 70,130,180], [220, 20, 60], [255,  0,  0], [  0,  0,142], [  0,  0, 70],
+        [  0, 60,100], [  0, 80,100], [  0,  0,230], [119, 11, 32]
+    ]
+    image, label = next(iter(val_dataloader))
+    image = image[0]
+    label = label[0].cpu().numpy()
+
+    model.eval()
+    with torch.no_grad():
+        logits = model(image.unsqueeze(0))
+        pred   = logits.argmax(1).squeeze().cpu().numpy()
+
+    image_vis = TF.to_pil_image(denormalize(image.cpu()))
+
+    gt_rgb   = decode_segmap(label, CITYSCAPES_PALETTE)
+    pred_rgb = decode_segmap(pred,  CITYSCAPES_PALETTE)
+
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+
+    axs[0].imshow(image_vis); axs[0].set_title("Input image")
+    axs[1].imshow(gt_rgb);    axs[1].set_title("Ground truth")
+    axs[2].imshow(pred_rgb);  axs[2].set_title("Prediction")
+
+    for ax in axs: ax.axis("off")
+    plt.tight_layout(); plt.show()
 
