@@ -8,4 +8,4 @@ train:
 
 data:
   root: /content/semantic_segmentation-25/datasets/data/Cityscapes/Cityspaces
-  img_size: 512
+  img_size: [512, 1024]

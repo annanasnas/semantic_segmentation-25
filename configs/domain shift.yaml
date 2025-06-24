@@ -9,5 +9,5 @@ train:
 data:
   dir_train: /content/semantic_segmentation-25/datasets/data/GTA5
   dir_val: /content/semantic_segmentation-25/datasets/data/Cityscapes/Cityspaces
-  img_size_train: 720
-  img_size_val: 512
+  img_size_train: [720, 1280]
+  img_size_val: [512, 1024]

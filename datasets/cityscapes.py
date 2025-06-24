@@ -8,7 +8,7 @@ import numpy as np
 
 
 class CityScapes(Dataset):
-    def __init__(self, root_dir, split='train', image_transform=None, image_size=512):
+    def __init__(self, root_dir, split='train', image_transform=None, image_size=(512, 1024)):
         super(CityScapes, self).__init__()
 
         self.root_dir = root_dir
@@ -35,8 +35,8 @@ class CityScapes(Dataset):
         image = Image.open(img_path).convert("RGB")
         label = Image.open(label_path)
 
-        image = transforms.Resize((self.image_size, self.image_size*2))(image)
-        label = transforms.Resize((self.image_size, self.image_size*2), interpolation=Image.NEAREST)(label)
+        image = transforms.Resize((self.image_size))(image)
+        label = transforms.Resize((self.image_size), interpolation=Image.NEAREST)(label)
         label = torch.as_tensor(np.array(label), dtype=torch.long)
 
         image = self.image_transform(image)

@@ -18,7 +18,7 @@ def main():
     zip_path.unlink()
 
     zip_path = pathlib.Path("datasets/data/GTA5.zip")
-    gdrive(CITYSCAPES_ID, zip_path)
+    gdrive(GTA5_ID, zip_path)
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(zip_path.parent)
     zip_path.unlink()

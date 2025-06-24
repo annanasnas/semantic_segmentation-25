@@ -8,7 +8,7 @@ import numpy as np
 
 
 class GTA5Dataset(Dataset):
-    def __init__(self, root_dir, image_transform=None):
+    def __init__(self, root_dir, image_transform=None, image_size=(720, 1280)):
 
         self.root_dir = root_dir
 
@@ -19,6 +19,7 @@ class GTA5Dataset(Dataset):
         self.label_paths = sorted(glob.glob(os.path.join(self.labels_dir, '*.png')))
 
         self.image_transform = image_transform
+        self.image_size = image_size
 
         assert len(self.image_paths) == len(self.label_paths), "Mismatch between image and label counts"
 
@@ -35,8 +36,8 @@ class GTA5Dataset(Dataset):
         image = Image.open(img_path).convert("RGB")
         label = Image.open(label_path)
 
-        image = transforms.Resize((720, 1280))(image)
-        label = transforms.Resize((720, 1280), interpolation=Image.NEAREST)(label)
+        image = transforms.Resize(self.image_size)(image)
+        label = transforms.Resize(self.image_size, interpolation=Image.NEAREST)(label)
 
         label_np = np.array(label, dtype=np.uint8)
         label_remapped = self.remap_gta5_labels(label_np)
