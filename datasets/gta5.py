@@ -47,7 +47,7 @@ class GTA5Dataset(Dataset):
 
         return image, label_tensor
     
-    def remap_gta5_labels(label_mask):
+    def remap_gta5_labels(self, label_mask):
 
         # mapping dict
         GTA5_to_Cityscapes = {
