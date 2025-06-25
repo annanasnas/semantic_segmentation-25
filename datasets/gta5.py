@@ -10,6 +10,9 @@ from torch.fft import fft2, ifft2
 import random
 
 
+imagenet_mean = [0.485, 0.456, 0.406]
+imagenet_std = [0.229, 0.224, 0.225]
+
 class GTA5Dataset(Dataset):
     def __init__(self, root_dir, image_transform=None, image_size=(720, 1280), FDA=False, beta=0.01):
 
