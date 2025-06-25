@@ -5,6 +5,7 @@ from PIL import Image
 import torch
 from torchvision import transforms
 import numpy as np
+import albumentations as A
 
 
 class GTA5Dataset(Dataset):
@@ -41,12 +42,19 @@ class GTA5Dataset(Dataset):
 
         label_np = np.array(label, dtype=np.uint8)
         label_remapped = self.remap_gta5_labels(label_np)
-        label_tensor = torch.as_tensor(label_remapped, dtype=torch.long)
+        label = torch.as_tensor(label_remapped, dtype=torch.long)
 
-        image = self.image_transform(image)
+        # albumentations
+        if isinstance(self.image_transform, A.Compose):
+            transformed = self.image_transform(image=np.array(image), mask=label_remapped)
+            image = transformed['image']
+            label = transformed['mask'].long()
+        else: # torch
+            image = self.image_transform(image)
 
-        return image, label_tensor
+        return image, label
     
+
     def remap_gta5_labels(self, label_mask):
 
         # mapping dict
