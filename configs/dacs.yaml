@@ -1,0 +1,13 @@
+model:
+  name: bisenet (DACS)
+
+train:
+  epochs: 50
+  batch_size: 4
+  lr: 0.01
+
+data:
+  dir_train: /content/semantic_segmentation-25/datasets/data/GTA5
+  dir_val: /content/semantic_segmentation-25/datasets/data/Cityscapes/Cityspaces
+  img_size_train: [720, 1280]
+  img_size_val: [512, 1024]
