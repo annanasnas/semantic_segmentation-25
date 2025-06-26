@@ -44,22 +44,6 @@ def count_params(model):
 
 
 @torch.no_grad()
-def evaluate_miou(model, dataloader, device):
-    model.eval()
-    hist = np.zeros((19, 19))
-    for imgs, masks in dataloader:
-        imgs  = imgs.to(device)
-        masks = masks.to(device, dtype=torch.long)
-        out   = model(imgs)[0] if isinstance(model(imgs), tuple) else model(imgs)
-        preds = torch.argmax(out, 1).cpu().numpy()
-        targs = masks.cpu().numpy(); targs[targs == 255] = -1
-        for lt, lp in zip(targs, preds):
-            hist += fast_hist(lt.flatten(), lp.flatten(), 19)
-    ious = per_class_iou(hist)
-    return ious
-
-
-@torch.no_grad()
 def latency_FPS(model, device, h, w):
     model.eval().to(device) 
     image = torch.randn(1, 3, h, w).to(device)
