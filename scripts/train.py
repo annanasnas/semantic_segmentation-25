@@ -129,12 +129,11 @@ def train_deeplab(start_epoch, epochs, model,
     ckpt.save_final(snapshot, epochs)
 
 
-def train_bisenet(model, train_dataloader, val_dataloader,
-                device, epochs, autocast, scaler,
-                optimizer, criterion, learning_rate,
-                iteration, max_iter,
-                ckpt, start_epoch, best_miou,
-                log_csv, metrics):
+def train_bisenet(start_epoch, epochs, model, 
+                  train_dataloader, val_dataloader, device,
+                  optimizer, criterion, scaler, 
+                  learning_rate, max_iter, iteration,
+                  best_miou, metrics, ckpt, log_csv):
     
 
     log_csv = Path(log_csv)
@@ -175,11 +174,9 @@ def train_bisenet(model, train_dataloader, val_dataloader,
         train_loss = running_loss / len(train_dataloader)
         print(f"Epoch {epoch+1}/{epochs}, Loss: {train_loss:.4f}")
 
-        miou = validate(model, autocast, val_dataloader, 
-				device, epoch, epochs, 
-				train_loss, metrics, log_csv)
+        miou = validate(model, val_dataloader, device)
 
-        # save log.csv
+        #save log
         new_row = {
             "epoch":      epoch + 1,
             "train_loss": train_loss,
@@ -192,6 +189,7 @@ def train_bisenet(model, train_dataloader, val_dataloader,
             log_csv, mode="a", index=False, header=not log_csv.exists()
         )
 
+        # visualize
         line_train.set_data(metrics["epoch"], metrics["train_loss"])
         line_miou.set_data(metrics["epoch"], metrics["val_miou"])
 
@@ -201,6 +199,7 @@ def train_bisenet(model, train_dataloader, val_dataloader,
 
         plot_handle.update(fig)
 
+        #save checkpoint
         snapshot = {
               "epoch":      epoch + 1,
               "model":      model.cpu().state_dict(),
