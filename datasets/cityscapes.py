@@ -5,6 +5,7 @@ from PIL import Image
 import torch
 from torchvision import transforms
 import numpy as np
+import albumentations as A
 
 
 class CityScapes(Dataset):
@@ -39,7 +40,13 @@ class CityScapes(Dataset):
         label = transforms.Resize((self.image_size), interpolation=Image.NEAREST)(label)
         label = torch.as_tensor(np.array(label), dtype=torch.long)
 
-        image = self.image_transform(image)
+        # albumentations
+        if isinstance(self.image_transform, A.Compose):
+            img_np = np.array(image)
+            transformed = self.image_transform(image=img_np)
+            image = transformed["image"]
+        else: # torch
+            image = self.image_transform(image)
 
         return image, label
 
