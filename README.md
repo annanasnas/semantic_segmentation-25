@@ -26,6 +26,16 @@ This project focuses on applying **domain adaptation techniques** to **real-time
 - **`README.md`**  
   Project documentation you’re reading now.
 
+### Notebooks Overview
+
+- `DeepLabV2.ipynb` — training DeepLabV2 on Cityscapes
+- `BiSeNet.ipynb` — training BiSeNet on Cityscapes
+- `DomainShift.ipynb` — training on GTA5, validation on Cityscapes
+- `Augmentations.ipynb` — basic augmentations to reduce domain shift
+- `FDA.ipynb` — FDA
+- `DACS.ipynb` — DACS
+- `Bisenet_Loss_function.ipynb` — Dice and Focal loss
+- `Bisenet_Histogram_Matching.ipynb` — Histogram Matching
 
 ## How to Run
 
