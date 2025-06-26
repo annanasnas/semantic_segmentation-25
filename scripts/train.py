@@ -7,29 +7,22 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from IPython.display import display
 import torch.nn.functional as F
+from torch.amp import autocast
 
 
-CITYSCAPES_CLASSES = [
-    'Road', 'Sidewalk', 'Building', 'Wall', 'Fence', 'Pole', 'Traffic light',
-    'Traffic sign', 'Vegetation', 'Terrain', 'Sky', 'Person', 'Rider', 'Car',
-    'Truck', 'Bus', 'Train', 'Motorcycle', 'Bicycle'
-]
+def validate(model, val_dataloader, device):
 
-CITYSCAPES_PALETTE = [
-    [128, 64,128], [244, 35,232], [ 70, 70, 70], [102,102,156], [190,153,153],
-    [153,153,153], [250,170, 30], [220,220,  0], [107,142, 35], [152,251,152],
-    [ 70,130,180], [220, 20, 60], [255,  0,  0], [  0,  0,142], [  0,  0, 70],
-    [  0, 60,100], [  0, 80,100], [  0,  0,230], [119, 11, 32]
-]
+    CITYSCAPES_CLASSES = [
+        'Road', 'Sidewalk', 'Building', 'Wall', 'Fence', 'Pole', 'Traffic light',
+        'Traffic sign', 'Vegetation', 'Terrain', 'Sky', 'Person', 'Rider', 'Car',
+        'Truck', 'Bus', 'Train', 'Motorcycle', 'Bicycle'
+    ]
 
-
-def validate(model, autocast, val_dataloader, device, epoch, epochs, 
-            train_loss, metrics, log_csv):
     model.eval()
     hist = np.zeros((19, 19))
 
     with torch.no_grad():
-        for images, masks in tqdm(val_dataloader, desc=f"Epoch {epoch+1}/{epochs} [Val]", leave=False):
+        for images, masks in tqdm(val_dataloader, desc=f"Validation...", leave=False):
             images, masks = images.to(device), masks.to(device, dtype=torch.long)
 
             with autocast(device_type='cuda'):
@@ -48,29 +41,15 @@ def validate(model, autocast, val_dataloader, device, epoch, epochs,
         print(f"{cls_name:16s}: {iou:.4f}")
     print(f"Mean IoU: {np.nanmean(ious):.4f}")
 
-    new_row = {
-        "epoch":      epoch + 1,
-        "train_loss": train_loss,
-        "val_miou":   miou,
-    }
-    metrics["epoch"].append(new_row["epoch"])
-    metrics["train_loss"].append(new_row["train_loss"])
-    metrics["val_miou"].append(new_row["val_miou"])
-    pd.DataFrame([new_row]).to_csv(
-        log_csv, mode="a", index=False, header=not log_csv.exists()
-    )
-
-    return miou, metrics
+    return miou
 
 
-def train_deeplab(model, train_dataloader, val_dataloader,
-                  device, epochs, autocast, scaler,
-                  optimizer, criterion, learning_rate,
-                  iteration, max_iter,
-                  ckpt, start_epoch, best_miou,
-                  log_csv, metrics):
+def train_deeplab(start_epoch, epochs, model, 
+                  train_dataloader, val_dataloader, device,
+                  optimizer, criterion, scaler, 
+                  learning_rate, max_iter, iteration,
+                  best_miou, metrics, ckpt, log_csv):
     
-
     log_csv = Path(log_csv)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
@@ -106,10 +85,22 @@ def train_deeplab(model, train_dataloader, val_dataloader,
         train_loss = running_loss / len(train_dataloader)
         print(f"Epoch {epoch+1}/{epochs}, Loss: {train_loss:.4f}")
 
-        miou, metrics = validate(model, autocast, val_dataloader, 
-				device, epoch, epochs, 
-				train_loss, metrics, log_csv)
+        miou = validate(model, val_dataloader, device)
 
+        #save log
+        new_row = {
+            "epoch":      epoch + 1,
+            "train_loss": train_loss,
+            "val_miou":   miou,
+        }
+        metrics["epoch"].append(new_row["epoch"])
+        metrics["train_loss"].append(new_row["train_loss"])
+        metrics["val_miou"].append(new_row["val_miou"])
+        pd.DataFrame([new_row]).to_csv(
+            log_csv, mode="a", index=False, header=not log_csv.exists()
+        )
+
+        # visualize
         line_train.set_data(metrics["epoch"], metrics["train_loss"])
         line_miou.set_data(metrics["epoch"], metrics["val_miou"])
 
@@ -119,6 +110,7 @@ def train_deeplab(model, train_dataloader, val_dataloader,
 
         plot_handle.update(fig)
 
+        #save checkpoint
         snapshot = {
               "epoch":      epoch + 1,
               "model":      model.cpu().state_dict(),
@@ -135,7 +127,6 @@ def train_deeplab(model, train_dataloader, val_dataloader,
             ckpt.save_best(miou, snapshot)
 
     ckpt.save_final(snapshot, epochs)
-
 
 
 def train_bisenet(model, train_dataloader, val_dataloader,
@@ -184,9 +175,22 @@ def train_bisenet(model, train_dataloader, val_dataloader,
         train_loss = running_loss / len(train_dataloader)
         print(f"Epoch {epoch+1}/{epochs}, Loss: {train_loss:.4f}")
 
-        miou, metrics = validate(model, autocast, val_dataloader, 
+        miou = validate(model, autocast, val_dataloader, 
 				device, epoch, epochs, 
 				train_loss, metrics, log_csv)
+
+        # save log.csv
+        new_row = {
+            "epoch":      epoch + 1,
+            "train_loss": train_loss,
+            "val_miou":   miou,
+        }
+        metrics["epoch"].append(new_row["epoch"])
+        metrics["train_loss"].append(new_row["train_loss"])
+        metrics["val_miou"].append(new_row["val_miou"])
+        pd.DataFrame([new_row]).to_csv(
+            log_csv, mode="a", index=False, header=not log_csv.exists()
+        )
 
         line_train.set_data(metrics["epoch"], metrics["train_loss"])
         line_miou.set_data(metrics["epoch"], metrics["val_miou"])
