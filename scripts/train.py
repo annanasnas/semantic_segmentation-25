@@ -220,12 +220,11 @@ def train_bisenet(start_epoch, epochs, model,
     ckpt.save_final(snapshot, epochs)
 
 
-def train_bisenet_FDA(model, train_dataloader, val_dataloader,
-                      device, epochs, autocast, scaler,
-                      optimizer, criterion, learning_rate,
-                      iteration, max_iter,
-                      ckpt, start_epoch, best_miou,
-                      log_csv, metrics,
+def train_bisenet_FDA(start_epoch, epochs, model, 
+                      train_dataloader, val_dataloader, device,
+                      optimizer, criterion, scaler, 
+                      learning_rate, max_iter, iteration,
+                      best_miou, metrics, ckpt, log_csv,
                       charbonnier_eps, charbonnier_alpha, lambda_ent):
     
 
@@ -279,13 +278,24 @@ def train_bisenet_FDA(model, train_dataloader, val_dataloader,
         train_loss = running_loss / len(train_dataloader)
         avg_ce = total_ce / len(train_dataloader)
         avg_ent = total_ent / len(train_dataloader)
-
         print(f"Epoch {epoch+1}/{epochs}, Loss: {running_loss / len(train_dataloader):.4f}, — CE: {avg_ce:.4f}  Ent: {avg_ent:.4f}")
 
-        miou, metrics = validate(model, autocast, val_dataloader, 
-				device, epoch, epochs, 
-				train_loss, metrics, log_csv)
+        miou = validate(model, val_dataloader, device)
 
+        #save log
+        new_row = {
+            "epoch":      epoch + 1,
+            "train_loss": train_loss,
+            "val_miou":   miou,
+        }
+        metrics["epoch"].append(new_row["epoch"])
+        metrics["train_loss"].append(new_row["train_loss"])
+        metrics["val_miou"].append(new_row["val_miou"])
+        pd.DataFrame([new_row]).to_csv(
+            log_csv, mode="a", index=False, header=not log_csv.exists()
+        )
+
+        # visualize
         line_train.set_data(metrics["epoch"], metrics["train_loss"])
         line_miou.set_data(metrics["epoch"], metrics["val_miou"])
 
@@ -295,6 +305,7 @@ def train_bisenet_FDA(model, train_dataloader, val_dataloader,
 
         plot_handle.update(fig)
 
+        #save checkpoint
         snapshot = {
               "epoch":      epoch + 1,
               "model":      model.cpu().state_dict(),
@@ -311,4 +322,5 @@ def train_bisenet_FDA(model, train_dataloader, val_dataloader,
             ckpt.save_best(miou, snapshot)
 
     ckpt.save_final(snapshot, epochs)
+
 
