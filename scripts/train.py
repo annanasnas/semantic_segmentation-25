@@ -19,11 +19,13 @@ def validate(model, val_dataloader, device):
     ]
 
     model.eval()
+    model.to(device)
+    
     hist = np.zeros((19, 19))
 
     with torch.no_grad():
         for images, masks in tqdm(val_dataloader, desc=f"Validation...", leave=False):
-            images, masks = images.to(device), masks.to(device, dtype=torch.long)
+            images, masks = images.to(device).float(), masks.to(device, dtype=torch.long)
 
             with autocast(device_type='cuda'):
                 outputs = model(images)
